@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 DEBUG = 0
 
-
+# Rain forecast
 def get_nowcast_for_location(latitude, longditude):  
 
 	parameters = {"lat": latitude, "lon": longditude} 
@@ -15,21 +15,29 @@ def get_nowcast_for_location(latitude, longditude):
 		print(response.status_code) # (200 - OK)
 
 	# Root element in xml tree
-	root = ET.fromstring(response.content) 
+	weather_data_root = ET.fromstring(response.content) 
 
-	return root
+	return weather_data_root
 
 
-def get_max_precipitation(root):
 
-	unit 			  = None
+def get_time_steps_from_weather_data(weater_data_root):
+
+	# Product - the node in the xml tree that contains the nowcast data at continuous time steps with 8 minutes intervals
+	product = weather_data_root.find('product')
+
+	time_steps = product.findall('time')
+
+	return time_steps
+
+
+
+
+def get_max_precipitation_from_weather_data(weather_data_root):
+
 	max_precipitation = 0
 
-	# Traverse the xml tree
-	# Product - the node in the xml tree that contains the nowcast data at continuous time steps with 8 minutes intervals
-	product = root.find('product')
-	
-	time_steps = product.findall('time')
+	time_steps = get_time_steps_from_weather_data(weather_data_root)
 
 	for time_step in time_steps:
 
@@ -41,14 +49,30 @@ def get_max_precipitation(root):
 		for location in locations:
 			precipitation = location.find('precipitation')
 
-			unit  		  = precipitation.get('unit')
 			precipitation = float(precipitation.get('value'))
+			
+			max_precipitation = max(precipitation, max_precipitation)
 
-			if precipitation > max_precipitation:
-				max_precipitation = precipitation
 
-	return max_precipitation, unit
+	return max_precipitation
 
+
+def get_wind_speed_from_weather_data(weather_data_root):
+	
+	wind_speed = 0
+
+	time_steps = get_time_steps_from_weather_data(weather_data_root)
+
+	for time_step in time_steps:
+		
+		locations = time_step.findall('location') 
+
+		for location in locations:
+			wind_gust = location.find('windGust')		
+
+			wind_speed = float(wind_gust.get('mps'))
+	
+	return wind_speed
 
 
 def need_umbrella(precipitation, threshold=1):
@@ -59,12 +83,20 @@ def need_umbrella(precipitation, threshold=1):
 	return False
 
 
-root = get_nowcast_for_location(63.42, 10.36) # location for Ila, Trondheim
-max_precipitation, unit = get_max_precipitation(root)
+def print_message_for_precipitation(precipitation):
 
-print "Maximum precipitation expected for the next 2 hours:", max_precipitation, unit 
+	print "Maximum precipitation expected for the next two hours:", precipitation, "mm/h."
 
-if need_umbrella(max_precipitation, threshold=0.5):
-	print "You need to bring an umbrella!"
-else:
-	print "There is no need for an umbrella, at least for the next two hours  #Trondheim "
+	if need_umbrella(precipitation, threshold=0.5):
+		print "You need to bring an umbrella!"
+	else:
+		print "There is no need for an umbrella, at least for the next two hours  #Trondheim "
+
+
+weather_data_root = get_nowcast_for_location(63.42, 10.36) # location for Ila, Trondheim
+
+max_precipitation = get_max_precipitation_from_weather_data(weather_data_root)
+
+
+print_message_for_precipitation(max_precipitation)
+
