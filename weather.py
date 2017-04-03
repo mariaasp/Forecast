@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 DEBUG = 0
 
 # Rain forecast
-def get_nowcast_for_location(latitude, longditude):  
+def get_nowcast_for_location(latitude, longditude):
 
 	parameters = {"lat": latitude, "lon": longditude} 
 
@@ -29,7 +29,6 @@ def get_time_steps_from_weather_data(weater_data_root):
 	time_steps = product.findall('time')
 
 	return time_steps
-
 
 
 
@@ -58,8 +57,6 @@ def get_max_precipitation_from_weather_data(weather_data_root):
 
 
 def get_wind_speed_from_weather_data(weather_data_root):
-	
-	wind_speed = 0
 
 	time_steps = get_time_steps_from_weather_data(weather_data_root)
 
@@ -68,11 +65,12 @@ def get_wind_speed_from_weather_data(weather_data_root):
 		locations = time_step.findall('location') 
 
 		for location in locations:
-			wind_gust = location.find('windGust')		
+			wind_gust = location.find('windGust')
 
-			wind_speed = float(wind_gust.get('mps'))
-	
-	return wind_speed
+			if windGust:
+				return float(wind_gust.get('mps'))
+
+	return None
 
 
 def need_umbrella(precipitation, threshold=1):
